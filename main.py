@@ -45,14 +45,16 @@ async def get_instagram_feed() -> Dict[str, Any]:
     all_posts = []
     next_url = f"https://graph.instagram.com/me/media?fields=id,caption,media_type,media_url,permalink,thumbnail_url&access_token={INSTAGRAM_ACCESS_TOKEN}&limit=25"
 
-    while next_url:
+    while next_url and len(all_posts) < 35:
         response = requests.get(next_url, timeout=10)
         response.raise_for_status()
         data = response.json()
         all_posts.extend(data.get('data', []))
         next_url = data.get('paging', {}).get('next')
 
-    filtered_posts = [post for post in all_posts if post.get('type') != 'reel' and post.get('media_type') != 'VIDEO']
+    all_posts = all_posts[:35]
+
+    filtered_posts = [post for post in all_posts if post.get('media_type') != 'VIDEO']
 
     return {"data": filtered_posts}
 
