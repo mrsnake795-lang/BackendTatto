@@ -52,7 +52,7 @@ async def get_instagram_feed() -> Dict[str, Any]:
         all_posts.extend(data.get('data', []))
         next_url = data.get('paging', {}).get('next')
 
-    all_posts = all_posts[:35]
+    all_posts = all_posts[:50]
 
     filtered_posts = [post for post in all_posts if post.get('media_type') != 'VIDEO']
 
