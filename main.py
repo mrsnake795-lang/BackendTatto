@@ -42,21 +42,19 @@ async def get_instagram_feed() -> Dict[str, Any]:
             detail="Token do Instagram não configurado."
         )
 
-    url = (
-        f"https://graph.instagram.com/me/media?"
-        f"fields=id,caption,media_type,media_url,permalink,thumbnail_url&"
-        f"access_token={INSTAGRAM_ACCESS_TOKEN}"
-    )
+    all_posts = []
+    next_url = f"https://graph.instagram.com/me/media?fields=id,caption,media_type,media_url,permalink,thumbnail_url&access_token={INSTAGRAM_ACCESS_TOKEN}&limit=25"
 
-    try:
-        response = requests.get(url, timeout=10)
+    while next_url:
+        response = requests.get(next_url, timeout=10)
         response.raise_for_status()
-        return response.json()
-    except requests.exceptions.RequestException as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Erro ao buscar feed do Instagram: {str(e)}"
-        )
+        data = response.json()
+        all_posts.extend(data.get('data', []))
+        next_url = data.get('paging', {}).get('next')
+
+    filtered_posts = [post for post in all_posts if post.get('type') != 'reel' and post.get('media_type') != 'VIDEO']
+
+    return {"data": filtered_posts}
 
 @app.post('/api/send-email')
 async def send_email(request: Request):
