@@ -6,6 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from datetime import datetime
 from dotenv import load_dotenv
 from typing import Dict, Any
+import json
 
 load_dotenv()
 
@@ -15,8 +16,8 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
     allow_credentials=True,
-    allow_methods=["GET", "POST"],
-    allow_headers=["Content-Type"],
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 INSTAGRAM_ACCESS_TOKEN = os.getenv("INSTAGRAM_ACCESS_TOKEN")
@@ -27,6 +28,10 @@ EMAILJS_PRIVATE_KEY = os.getenv("EMAILJS_PRIVATE_KEY")
 
 if not all([EMAILJS_USER_ID, EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, EMAILJS_PRIVATE_KEY]):
     raise ValueError("Variáveis de ambiente do EmailJS não configuradas corretamente.")
+
+@app.get('/')
+async def root():
+    return {"message": "Backend is running"}
 
 @app.get('/years-experience')
 async def calculate_years_experience() -> int:
@@ -51,8 +56,6 @@ async def get_instagram_feed() -> Dict[str, Any]:
         data = response.json()
         all_posts.extend(data.get('data', []))
         next_url = data.get('paging', {}).get('next')
-
-    all_posts = all_posts[:50]
 
     filtered_posts = [post for post in all_posts if post.get('media_type') != 'VIDEO']
 
@@ -100,14 +103,9 @@ async def send_email(request: Request):
             headers={'Content-Type': 'application/json'},
             timeout=10
         )
-        print(f"Status Code: {response.status_code}")
-        print(f"Resposta Completa: {response.text}")
         response.raise_for_status()
         return {"status": "success", "message": "E-mail enviado com sucesso!"}
     except requests.exceptions.HTTPError as err:
-        print(f"Erro HTTP do EmailJS: {err}")
-        print(f"Resposta: {response.text}")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Erro ao enviar e-mail: {response.text}")
     except Exception as e:
-        print(f"Erro: {str(e)}")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Erro ao enviar e-mail: {str(e)}")
